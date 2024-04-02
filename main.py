@@ -11,6 +11,7 @@ from aiogram.types.voice import Voice
 from aiogram.enums import ParseMode
 from aiogram.types import chat_administrator_rights
 from dotenv import load_dotenv
+from aiogram.exceptions import TelegramBadRequest
 
 load_dotenv()
 
@@ -33,11 +34,11 @@ async def start_handler(msg: Message):
 
 @dp.message(F.voice)
 async def voice_handler(msg: Message):
-    #chat_info = await bot.get_chat(msg.chat.id)
-    #chat_info.
-    #if bot.get_chat()
-    await msg.delete()
-    await msg.answer("_Voice message was deleted_")
+    try:
+        await msg.delete()
+        await msg.answer("_Voice message was deleted_")
+    except TelegramBadRequest:
+        await msg.answer('_Not enough rights to delete message_')
 
 
 @dp.message(F.text)
