@@ -1,6 +1,9 @@
 import asyncio
+import ctypes
 import os
 import logging
+from io import BytesIO
+import io
 import aiogram
 from aiogram import html
 from aiogram.enums import ParseMode
@@ -12,16 +15,26 @@ from aiogram.enums import ParseMode
 from aiogram.types import chat_administrator_rights
 from dotenv import load_dotenv
 from aiogram.exceptions import TelegramBadRequest
+from aiogram.methods import GetFile
+from ctypes import *
+import whisper
+import numpy as np
+from pathlib import Path
+from pydub import AudioSegment
+import os, sys
 
 load_dotenv()
-
-logging.basicConfig(level=logging.INFO)
-bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"), parse_mode=ParseMode.MARKDOWN)
 dp = Dispatcher()
 
 
 async def main():
-    await dp.start_polling(bot)
+    bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"), parse_mode=ParseMode.MARKDOWN)
+
+    model = whisper.load_model('base')
+    await dp.start_polling(
+        bot,
+        model=model
+    )
 
 
 @dp.message(Command("start"))
@@ -33,10 +46,23 @@ async def start_handler(msg: Message):
 
 
 @dp.message(F.voice)
-async def voice_handler(msg: Message):
+async def voice_handler(msg: Message, model):
+    bot = msg.bot
+    AudioSegment.converter = f"{os.getcwd()}\\ffmpeg.exe"
+    AudioSegment.ffprobe = f"{os.getcwd()}\\ffprobe.exe"
+    downloaded = f"C:/Users/darmren/Downloads/Voices/{msg.voice.file_id}.wav"
+    voice = f"C:/Users/darmren/Downloads/Voices/voice.wav"
+    await bot.download(msg.voice, destination=downloaded)
+    path = Path(downloaded)
+    audio = AudioSegment.from_wav(path)
+    audio.export(voice, format='wav')
+
     try:
+        result = model.transcribe(voice)
+        print(result)
         await msg.delete()
         await msg.answer("_Voice message was deleted_")
+        await msg.answer(result["text"])
     except TelegramBadRequest:
         await msg.answer('_Not enough rights to delete message_')
 
@@ -48,4 +74,5 @@ async def echo_handler(msg: Message):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
