@@ -48,20 +48,12 @@ async def start_handler(msg: Message):
 @dp.message(F.voice)
 async def voice_handler(msg: Message, model):
     bot = msg.bot
-    AudioSegment.converter = f"{os.getcwd()}\\ffmpeg.exe"
-    AudioSegment.ffprobe = f"{os.getcwd()}\\ffprobe.exe"
     downloaded = f"C:/Users/darmren/Downloads/Voices/{msg.voice.file_id}.wav"
-    voice = f"C:/Users/darmren/Downloads/Voices/voice.wav"
     await bot.download(msg.voice, destination=downloaded)
-    path = Path(downloaded)
-    audio = AudioSegment.from_wav(path)
-    audio.export(voice, format='wav')
-
     try:
-        result = model.transcribe(voice)
-        print(result)
+        result = model.transcribe(downloaded)
         await msg.delete()
-        await msg.answer("_Voice message was deleted_")
+        # await msg.answer("_Voice message was deleted_")
         await msg.answer(result["text"])
     except TelegramBadRequest:
         await msg.answer('_Not enough rights to delete message_')
